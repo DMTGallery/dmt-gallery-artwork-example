@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="UTF-8"/>
+    <title>Circle</title>
+    <style>
+        * {
+            font-weight: bold;
+            font-size: 18pt;
+        }
+        *:focus {
+            outline: none;
+        }
+        html {
+            height: 100%;
+        }
+        body {
+            min-height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+        }
+        canvas {
+            padding: 0;
+            margin: auto;
+            display: block;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        p {
+            text-align: center;
+            color: #ffc532;
+        }
+        button {
+            font-size: 16pt;
+            width: 130pt;
+            height: 30pt;
+            border-radius: 100pt;
+            border: 0;
+            color: #303030;
+            background-color: #ffc532;
+            margin: 0 auto;
+         }
+        button:hover {
+            background-color: #ffc53c;
+            cursor: pointer;
+        }
+        button:active {
+            font-size: 15.2pt;
+            width: 123.5pt;
+            height: 28.5pt;
+            margin: 1.5pt auto 0;
+        }
+        .flex-column-centered {
+            display: flex;
+            flex-direction: column;
+            margin: auto;
+        }
+        .page-div {
+            position: fixed;
+            z-index: 3;
+            display: none;
+            width: 100%;
+            height: 100%;
+            background-color: #303030;
+        }
+        #dmt-mint-not-injected-text {
+            margin: 0 auto 16pt;
+        }
+    </style>
+</head>
+<body>
+<script id="dmt-mint-data" data-inscription-id="MINT_INSCRIPTION_ID"></script>
+<div class="page-div" id="no-access-to-on-chain-page">
+    <div class="flex-column-centered">
+        <p>
+            Your environment doesn't provide access to Bitcoin's on-chain data.<br/>
+            Either view this artwork from an ordinals viewer or add recursion support.
+        </p>
+    </div>
+</div>
+<div class="page-div" id="dmt-mint-not-injected-page">
+    <div class="flex-column-centered">
+        <p id="dmt-mint-not-injected-text">
+            A "dmt-mint" json, which points to a specific Bitcoin block, hasn't been injected.<br/>
+            You can still explore this artwork by generating it from data of a random Bitcoin block:
+        </p>
+        <button onclick="onGenerateArtworkClick()">Generate</button>
+    </div>
+</div>
+<script>
+    // Get html elements of pages.
+    let noRecursionSupportPageElement = document.getElementById('no-access-to-on-chain-page');
+    let dmtMintNotInjectedPageElement = document.getElementById('dmt-mint-not-injected-page');
+
+    // Define a boolean to prevent "Generate" double click.
+    let startedGeneratingArtwork = false;
+
+    // Check, whether a dmt-mint json inscription id has been injected into the script.
+    // If it has been injected, the artwork script will load the artwork right away.
+    const dmtMintData = document.getElementById('dmt-mint-data');
+    const injectedMintInscriptionId = dmtMintData.dataset.inscriptionId;
+    const inscriptionIdNotInjected = !inscriptionIdValid(injectedMintInscriptionId);
+
+    function showDmtMintNotInjectedPage() {
+        if (dmtMintNotInjectedPageElement != null) {
+            dmtMintNotInjectedPageElement.style.display = 'flex';
+        }
+    }
+
+    function removeDmtMintNotInjectedPage() {
+        if (dmtMintNotInjectedPageElement != null) {
+            dmtMintNotInjectedPageElement.remove();
+            dmtMintNotInjectedPageElement = null;
+        }
+    }
+
+    function showNoRecursionSupportPage() {
+        if (noRecursionSupportPageElement != null) {
+            noRecursionSupportPageElement.style.display = 'flex';
+        }
+    }
+
+    function removeNoRecursionSupportPage() {
+        if (noRecursionSupportPageElement != null) {
+            noRecursionSupportPageElement.remove();
+            noRecursionSupportPageElement = null;
+        }
+    }
+
+    function inscriptionIdValid(inscriptionId) {
+        if (inscriptionId == null) return false;
+        return RegExp('^([a-fA-F0-9]{64})i[0-9]+$').test(inscriptionId);
+    }
+
+    async function onGenerateArtworkClick() {
+        if (!startedGeneratingArtwork) {
+            startedGeneratingArtwork = true;
+            removeDmtMintNotInjectedPage();
+            removeNoRecursionSupportPage();
+            await setupArtwork(null);
+        }
+    }
+
+    function logArtworkTraits(seedBlockData) {
+        const traitsString = JSON.stringify(calculateTraits(seedBlockData), null, 2);
+        console.log(`This variation is generated from data of Bitcoin block ${seedBlockData.height}.`);
+        console.log("Artwork traits:\n" + traitsString);
+    }
+
+    function onFailedToReachRecursiveEndpoint() {
+        showNoRecursionSupportPage();
+        removeDmtMintNotInjectedPage();
+    }
+</script>
+<!-- A tool for loading data of the block, that a "dmt-mint" json points to -->
+<script src='/content/572ee343ce5e1b1e4a7ba9ef0b96f0f44663db59282b77efb734536a8dad70afi0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<!-- Artwork traits script -->
+<script src='/content/a8a1b3e0313a5ed9d08a8165d25192cb0cd1df66468cafed6fb0b8e31895367di0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<!-- Deterministic random script -->
+<script>
+    class Random {
+        constructor(merkleRoot) {
+            this.useA = false;
+            const Sfc32 = function (hex) {
+                let a = parseInt(hex.substring(0, 8), 16);
+                let b = parseInt(hex.substring(8, 16), 16);
+                let c = parseInt(hex.substring(16, 24), 16);
+                let d = parseInt(hex.substring(24, 32), 16);
+                return function () {
+                    a |= 0;
+                    b |= 0;
+                    c |= 0;
+                    d |= 0;
+                    const t = (((a + b) | 0) + d) | 0;
+                    d = (d + 1) | 0;
+                    a = b ^ (b >>> 9);
+                    b = (c + (c << 3)) | 0;
+                    c = (c << 21) | (c >>> 11);
+                    c = (c + t) | 0;
+                    return (t >>> 0) / 4294967296;
+                };
+            };
+            this.prngA = new Sfc32(merkleRoot.substring(0, 32));
+            this.prngB = new Sfc32(merkleRoot.substring(32, 64));
+            for (let i = 0; i < 1e6; i += 2) {
+                this.prngA();
+                this.prngB();
+            }
+        }
+
+        randomDec() {
+            this.useA = !this.useA;
+            return this.useA ? this.prngA() : this.prngB();
+        }
+
+        randomDecFromRange(a, b) {
+            return a + (b - a) * this.randomDec();
+        }
+
+        randomChoice(list) {
+            return list[Math.floor(this.randomDecFromRange(0, list.length))];
+        }
+    }
+</script>
+<!-- Artwork script -->
+<script>
+    window.onload = () => {
+        setup();
+    }
+
+    let circleRadius;
+    let circleColor;
+
+    function setup() {
+        if (inscriptionIdNotInjected) {
+            // DMT mint json inscription id hasn't been injected into the script, communicate it to the user.
+            showDmtMintNotInjectedPage();
+        } else {
+            // DMT mint json inscription id has been injected into the script, we can start loading the artwork.
+            setupArtwork(injectedMintInscriptionId);
+            removeDmtMintNotInjectedPage();
+            removeNoRecursionSupportPage();
+        }
+    }
+
+    async function setupArtwork(injectedMintInscriptionId) {
+        // Get the seed block data.
+        let seedBlockData = null;
+        try {
+            if (injectedMintInscriptionId == null) {
+                seedBlockData = await loadRandomBlockData();
+            } else {
+                seedBlockData = await loadDmtMintBlockData(injectedMintInscriptionId);
+            }
+        } catch (e) {
+            onFailedToReachRecursiveEndpoint();
+            throw e;
+        }
+
+        // Log the artwork traits.
+        logArtworkTraits(seedBlockData);
+
+        // Derive random from the merkle root of the seed block.
+        const random = new Random(seedBlockData.merkle_root);
+
+        // Setup canvas we'll draw on.
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.appendChild(canvas);
+
+        // Initialize traits.
+        circleRadius = random.randomDecFromRange(0.01, 0.5) * Math.min(canvas.width, canvas.height);
+        circleColor = random.randomChoice([
+            'lightyellow',
+            'papayawhip',
+            'seagreen',
+            'olive',
+            'lightcyan',
+            'cadetblue',
+            'cornflowerblue',
+            'mediumslateblue',
+            'lavender',
+            'plum',
+            'indigo',
+            'snow',
+            'beige',
+            'oldlace',
+            'gainsboro',
+            'black'
+        ]);
+
+        // Draw the artwork.
+        drawArtwork(canvas);
+    }
+
+    function drawArtwork(canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = circleColor;
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, circleRadius, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+</script>
+</body>
+</html>
