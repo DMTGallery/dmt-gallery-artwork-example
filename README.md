@@ -1,17 +1,17 @@
 # Circle
 Circle is an example artwork made for DMT Gallery for the purpose of educating artists. This tutorial assumes you have knowledge of HTML, CSS, JS. 
 
-Also, we have deployed this artwork on-chain on Bitcoin Signet. [Feel free to explore it here](https://signet.ordinals.com/inscription/02f8695722a280d68167838ae472d3adc589eac598c701ba55cb0a872ef8249di0).
+Also, we have deployed this artwork on-chain on Bitcoin Mainnet. [Feel free to explore it here](https://ordinals.com/inscription/eb3eee3fa15069b1d922c31b90a9e3ccb3033651f5f03f61c0ccd9e57de6a183i0).
 > [!NOTE]  
 > This page continues [this tutorial](https://dmt-gallery.gitbook.io/doc/artists/technical-requirements). If you haven't read it, but want to make an artwork for DMT Gallery, it's highly recommended you do.
 
-As you already know, the 2 of the primary components of any DMT Gallery artwork are:
+As you already know, the 2 primary components of any DMT Gallery artwork are:
 1. The artwork script.
 2. The traits script.
 
 Here we will only review the artwork script (full source code is in the `circle-artwork.html` file in this repository), since [this page](https://dmt-gallery.gitbook.io/doc/artists/technical-requirements#what-you-need-to-provide) has already told you everything about the traits script.
 
-But the traits script for this artwork can also be found in this repository (the `circle-traits-script.js` file). Have a look, if you need!
+The traits script for this artwork can also be found in this repository (the `circle-traits-script.js` file).
 
 ### The artwork script
 Beginning of the artwork script is pretty standard, so we omitted the CSS styles to keep it shorter:
@@ -25,36 +25,37 @@ Beginning of the artwork script is pretty standard, so we omitted the CSS styles
     <style>
         /* 
         Styles for the states of the artwork page.
-        (we'll go over what states your artwork page needs to have).
-        Feel free to change the CSS to adjust the visuals of those states.
+        (we'll go over the states your artwork page should have).
+        Feel free to change this CSS to adjust the visuals.
         */
     </style>
 </head>
 <body>
-<script id="dmt-mint-data" data-inscription-id="MINT_INSCRIPTION_ID"></script>
+<script id="dmt-mint-block" data-block-number="DMT_MINT_BLOCK_NUMBER"></script>
 ```
 In the script above, pay attention to the last line.
-This is a "dataset" element, all it does is it holds data. This data is accessible from JS.
-In this dataset, the `inscriptionId` key holds `MINT_INSCRIPTION_ID` value.
+This is a ["dataset" element](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset), all it does is it holds data. This data is accessible from JS.
+In this dataset, the `blockNumber` key holds `DMT_MINT_BLOCK_NUMBER` value.
 
 Right now, this value is just a placeholder.
-When users mint your project, the art they'll get is this script, but with all `MINT_INSCRIPTION_ID` occurrences replaced.
+When users mint your project, the art they'll get is this script, but with all `DMT_MINT_BLOCK_NUMBER` occurrences replaced.
 **In your artwork**, **this line must be exactly the same**.
 
 > [!WARNING]  
-> Don't use the `MINT_INSCRIPTION_ID` string anywhere else in your artwork code, 
-> unless you want it replaced with an inscription id of the minter's dmt-mint json.
+> Don't use the `DMT_MINT_BLOCK_NUMBER` string anywhere else in your artwork code, 
+> unless you want it replaced with a block number of a minter's dmt-mint json.
 
-**You will use this inscription id to load data of the block, that will "seed" your artwork**. We will tell you how to do it later. For now, just remember, that this is how users get different artworks from the same script.
+**You will use this block number to load data of the block, that will "seed" your artwork**. We will tell you how to do it later. For now, just remember, that this is how users get different artwork variations from the same script.
 
 > [!TIP]  
-> For the curious ones, dmt-mint json is an inscription, which will be attached to every single mint.
-> It acts as an "on-chain certificate", which secures the fact, that a Bitcoin block with the right element
-> has been used to mint your artwork.
+> For the curious ones, all mints have a dmt-mint json embedded into their content.
+> That's where this block number will come from, to later be injected into your artwork script.
+> The dmt-mint json acts as an "on-chain certificate", which secures the fact, that a Bitcoin block
+> with the right element has been used to mint your artwork.
 > 
-> We cannot hand-pick the blocks to use, we can only choose an element.
-> And then, the blocks with the element are the blocks we can use.
-> This is how Bitcoin "seeds" your artwork non-arbitrarily and defines the supply cap (since a block can be used only once).
+> We cannot hand-pick block numbers, we can only choose an element.
+> And then, the blocks with the element are the blocks we can use to create mints of your artwork.
+> This is how Bitcoin "seeds" your artwork non-arbitrarily and defines the supply cap (supply of mints = supply of element).
 
 Let's move on to the next code segment!
 ```
@@ -83,11 +84,11 @@ Let's move on to the next code segment!
     // Define a boolean to prevent "Generate" double click.
     let startedGeneratingArtwork = false;
 
-    // Get the dmt-mint inscription id and check, whether it has been injected.
-    // The artwork script will use the "inscriptionIdNotInjected" boolean to decide, what to show (error page/artwork).
-    const dmtMintData = document.getElementById('dmt-mint-data');
-    const injectedMintInscriptionId = dmtMintData.dataset.inscriptionId;
-    const inscriptionIdNotInjected = !inscriptionIdValid(injectedMintInscriptionId);
+    // Check, whether a dmt-mint block has been injected into the script.
+    // If it has been injected, the artwork script will load the artwork right away.
+    const dmtMintBlock = document.getElementById('dmt-mint-block');
+    const injectedMintBlockNumber = parseInt(dmtMintBlock.dataset.blockNumber);
+    const blockNumberNotInjected = !blockNumberValid(injectedMintBlockNumber);
 
     // Below are the methods to show/hide error pages conveniently.
     function showDmtMintNotInjectedPage() {
@@ -117,10 +118,9 @@ Let's move on to the next code segment!
     }
 
     // This method helps us understand, whether a valid 
-    // dmt-mint json inscription id has been injected.
-    function inscriptionIdValid(inscriptionId) {
-        if (inscriptionId == null) return false;
-        return RegExp('^([a-fA-F0-9]{64})i[0-9]+$').test(inscriptionId);
+    // dmt-mint json block number has been injected.
+    function blockNumberValid(blockNumber) {
+        return Number.isInteger(blockNumber) && blockNumber >= 0;
     }
 
     // Implementation for the "Generate" button, which triggers rendering of this artwork from a random block.
@@ -155,16 +155,16 @@ Users, who run your artwork, may not know it. This is why, in case of errors, we
 The code above is essentially that, plus some other minor things. Now, let's explore in more detail:
 
 1. `<div class="page-div" id="no-access-to-on-chain-page"></div>` - element of the page, which contains a "Bitcoin data is not available" message. Show it, when a request for Bitcoin data fails.
-2. `<div class="page-div" id="dmt-mint-not-injected-page">` - element of the page, which contains a message about the fact, that a dmt-mint inscription id hasn't been injected. Such error is possible, when people find and view your artwork inscription directly, instead of viewing their mint. Since a reference to a block isn't injected, this page provides a "Generate" button, which should generate an artwork from a random Bitcoin block. 
-3. `<script>...</script>` - a script, which manages the divs above + some other things. Go ahead and read the code, I marked everything with comments. All DMT Gallery artworks must use this script for error handling. You will see, how this script is used, during artwork initialization.
+2. `<div class="page-div" id="dmt-mint-not-injected-page">` - element of the page, which contains a message about the fact, that a dmt-mint block number hasn't been injected. Such error is possible, when people find and view your artwork inscription directly, instead of viewing their mint. This page provides a "Generate" button, which should generate an artwork from a random Bitcoin block. 
+3. `<script>...</script>` - a script, which manages the divs above + some other things. Go ahead and read the code, everything is marked with comments. All DMT Gallery artworks must use this script for error handling. You will see, how this script is used, during artwork initialization below.
 
 Let's move on to the next code segment:
 
 ```
 <!-- A tool for loading data of the block, that a "dmt-mint" json points to (also can load data of random blocks) -->
-<script src='/content/572ee343ce5e1b1e4a7ba9ef0b96f0f44663db59282b77efb734536a8dad70afi0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<script src='/content/576ad54f673471775515f9bd3c0a3fb2c4e6971ea3a919e2cde45fd2a91c3b4ai0' onerror="onFailedToReachRecursiveEndpoint()"></script>
 <!-- Artwork traits script -->
-<script src='/content/a8a1b3e0313a5ed9d08a8165d25192cb0cd1df66468cafed6fb0b8e31895367di0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<script src='/content/0a9102c61dac30d571c4ce04adb65237cf900e2a7942a4838899befceb618678i0' onerror="onFailedToReachRecursiveEndpoint()"></script>
 <!-- Deterministic random script -->
 <script>
     class Random {
@@ -222,14 +222,8 @@ But if there is no Bitcoin/ord, this must also be handled and explained to the u
 GET `/content/<inscriptionId>` returns content of the inscription with the provided id. [Other requests, that can be made to get on-chain data](https://docs.ordinals.com/inscriptions/recursion.html).
 
 Here is what the imported scripts do:
-1. The first script gives you just 2 methods: `loadRandomBlockData()` and `loadDmtMintBlockData(injectedMintInscriptionId)`. Both methods return the block data object, field(s) of which you'll use as "seed". If `inscriptionIdNotInjected == true`, you show the error page with the "Generate" button and use `loadRandomBlockData()` during generation. Otherwise - use `loadDmtMintBlockData(injectedMintInscriptionId)`.
-2. The second script just imports the traits script. Every artwork must import its traits script, calculate and display mint's traits. Easiest way is to log them in console by invoking `logArtworkTraits(blockDataObject)`.
-
-> [!NOTE]  
-> The inscription ids in this script are from Bitcoin Signet.
-> To get the "loadRandomBlockData()" and "loadDmtMintBlockData()" methods on the Mainnet, use this inscription id: 53bffa3b91aa32c1aa04ca519d0ee90afb60bac57b57259b3da4a2d0f63f5c10i0.
-> 
-> Also, you don't have to install all the heavy Bitcoin infrastructure during artwork development! Feel free to use off-chain references, but make sure all of them have on-chain copies/can be inscribed.
+1. The first script gives you 2 methods: `loadRandomBlockData()` and `loadBlockData(blockNumber)`. Both methods return the block data object, field(s) of which you'll use as "seed". If `blockNumberNotInjected == true`, you show the error page with the "Generate" button and use `loadRandomBlockData()` during artwork initialization. Otherwise - use `loadBlockData(blockNumber)`.
+2. The second script just imports the traits script. Every artwork must import its traits script, calculate and display mint's traits. Easiest way is to do this is to log them in console by invoking `logArtworkTraits(blockDataObject)`.
 
 Now, let's move to the final part, where the artwork is initialized and drawn, where everything comes together!
 I marked all the code with comments, so just read it and you'll understand.
@@ -238,7 +232,7 @@ I marked all the code with comments, so just read it and you'll understand.
 <!-- Artwork script -->
 <script>
     // Schedule invocation of the "setup()" method to initialize our artwork, as soon as the page is loaded.
-    // If you use p5.js or similar alternatives, such method will be invoked automatically.
+    // If you use p5.js or similar alternatives, such "entry" method is already provided.
     window.onload = () => {
         setup();
     }
@@ -249,34 +243,30 @@ I marked all the code with comments, so just read it and you'll understand.
 
     // Starts artwork initialization. 
     function setup() {
-        if (inscriptionIdNotInjected) {
-            // Dmt-mint inscription id is not injected, just show the error page.
-            // setupArtwork(id), which is the entry point of the artwork, will not be invoked.
-            // But if the user clicks "Generate" on the error page, it will invoke setupArtwork(null).
+        if (blockNumberNotInjected) {
+            // Block of a dmt-mint json hasn't been injected into the script, communicate it to the user.
             showDmtMintNotInjectedPage();
         } else {
-            // DMT mint json inscription id has been injected into the script!
-            // It means we can invoke setupArtwork() right away, providing the id.
-            setupArtwork(injectedMintInscriptionId);
-            // After initializing the artwork we remove the redundant error pages from DOM.
+            // Block of a dmt-mint json has been injected into the script, we can start loading the artwork.
+            setupArtwork(injectedMintBlockNumber);
             removeDmtMintNotInjectedPage();
             removeNoRecursionSupportPage();
         }
     }
 
     // The entry point into the "artwork" code.
-    async function setupArtwork(injectedMintInscriptionId) {
+    async function setupArtwork(blockNumber) {
         // Get the block, which we should use as "seed" for the artwork.
         let seedBlockData = null;
         try {
-            if (injectedMintInscriptionId == null) {
-                // If mint inscription id hasn't been injected, this is not a mint, the user has launched
+            if (blockNumber == null) {
+                // If mint block number hasn't been injected, this is not a mint, the user has launched
                 // your artwork directly and clicked "Generate" from the error page to render from a random block.
                 seedBlockData = await loadRandomBlockData();
             } else {
                 // This is a valid mint, which has to render a specific block.
-                // Get the block data of this mint using the injected dmt-mint inscription id.
-                seedBlockData = await loadDmtMintBlockData(injectedMintInscriptionId);
+                // Get the block data of this mint using the injected dmt-mint block number.
+                seedBlockData = await loadBlockData(blockNumber);
             }
         } catch (e) {
             // Methods, that load block data, talk to Bitcoin.
@@ -286,8 +276,7 @@ I marked all the code with comments, so just read it and you'll understand.
             throw e;
         }
 
-        // Log the artwork traits into console, so that people
-        // can see their mint traits on-chain without hard work.
+        // Log the artwork traits (traits must be displayed on-chain, this is the easiest way to do it).
         logArtworkTraits(seedBlockData);
 
         // We have a block, ready to be used as "seed".
@@ -343,4 +332,4 @@ I marked all the code with comments, so just read it and you'll understand.
 Congratulations, you've finished the tutorial!
 If you still have questions about making your artwork, jump into our Discord and ask, we'll be glad to help. 
 
-Also, when making your artwork, feel free to copy this project and remove the artwork code from here. You'll need 70% of this code anyway (error handling, initialization), so this can act as a good starting point!
+Also, when making your artwork, feel free to copy this project. You'll need 70% of this code anyway (error handling, initialization), so this can act as a good starting point!

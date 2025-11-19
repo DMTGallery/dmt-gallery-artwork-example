@@ -33,7 +33,7 @@
         }
         p {
             text-align: center;
-            color: #ffc532;
+            color: #cccccc;
         }
         button {
             font-size: 16pt;
@@ -42,11 +42,11 @@
             border-radius: 100pt;
             border: 0;
             color: #303030;
-            background-color: #ffc532;
+            background-color: #cccccc;
             margin: 0 auto;
-         }
+        }
         button:hover {
-            background-color: #ffc53c;
+            background-color: #e6e6e6;
             cursor: pointer;
         }
         button:active {
@@ -74,7 +74,7 @@
     </style>
 </head>
 <body>
-<script id="dmt-mint-data" data-inscription-id="MINT_INSCRIPTION_ID"></script>
+<script id="dmt-mint-block" data-block-number="DMT_MINT_BLOCK_NUMBER"></script>
 <div class="page-div" id="no-access-to-on-chain-page">
     <div class="flex-column-centered">
         <p>
@@ -100,11 +100,11 @@
     // Define a boolean to prevent "Generate" double click.
     let startedGeneratingArtwork = false;
 
-    // Check, whether a dmt-mint json inscription id has been injected into the script.
+    // Check, whether a dmt-mint block has been injected into the script.
     // If it has been injected, the artwork script will load the artwork right away.
-    const dmtMintData = document.getElementById('dmt-mint-data');
-    const injectedMintInscriptionId = dmtMintData.dataset.inscriptionId;
-    const inscriptionIdNotInjected = !inscriptionIdValid(injectedMintInscriptionId);
+    const dmtMintBlock = document.getElementById('dmt-mint-block');
+    const injectedMintBlockNumber = parseInt(dmtMintBlock.dataset.blockNumber);
+    const blockNumberNotInjected = !blockNumberValid(injectedMintBlockNumber);
 
     function showDmtMintNotInjectedPage() {
         if (dmtMintNotInjectedPageElement != null) {
@@ -132,9 +132,8 @@
         }
     }
 
-    function inscriptionIdValid(inscriptionId) {
-        if (inscriptionId == null) return false;
-        return RegExp('^([a-fA-F0-9]{64})i[0-9]+$').test(inscriptionId);
+    function blockNumberValid(blockNumber) {
+        return Number.isInteger(blockNumber) && blockNumber >= 0;
     }
 
     async function onGenerateArtworkClick() {
@@ -158,9 +157,9 @@
     }
 </script>
 <!-- A tool for loading data of the block, that a "dmt-mint" json points to -->
-<script src='/content/572ee343ce5e1b1e4a7ba9ef0b96f0f44663db59282b77efb734536a8dad70afi0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<script src='/content/576ad54f673471775515f9bd3c0a3fb2c4e6971ea3a919e2cde45fd2a91c3b4ai0' onerror="onFailedToReachRecursiveEndpoint()"></script>
 <!-- Artwork traits script -->
-<script src='/content/a8a1b3e0313a5ed9d08a8165d25192cb0cd1df66468cafed6fb0b8e31895367di0' onerror="onFailedToReachRecursiveEndpoint()"></script>
+<script src='/content/0a9102c61dac30d571c4ce04adb65237cf900e2a7942a4838899befceb618678i0' onerror="onFailedToReachRecursiveEndpoint()"></script>
 <!-- Deterministic random script -->
 <script>
     class Random {
@@ -217,25 +216,25 @@
     let circleColor;
 
     function setup() {
-        if (inscriptionIdNotInjected) {
-            // DMT mint json inscription id hasn't been injected into the script, communicate it to the user.
+        if (blockNumberNotInjected) {
+            // Block of a dmt-mint json hasn't been injected into the script, communicate it to the user.
             showDmtMintNotInjectedPage();
         } else {
-            // DMT mint json inscription id has been injected into the script, we can start loading the artwork.
-            setupArtwork(injectedMintInscriptionId);
+            // Block of a dmt-mint json has been injected into the script, we can start loading the artwork.
+            setupArtwork(injectedMintBlockNumber);
             removeDmtMintNotInjectedPage();
             removeNoRecursionSupportPage();
         }
     }
 
-    async function setupArtwork(injectedMintInscriptionId) {
+    async function setupArtwork(blockNumber) {
         // Get the seed block data.
         let seedBlockData = null;
         try {
-            if (injectedMintInscriptionId == null) {
+            if (blockNumber == null) {
                 seedBlockData = await loadRandomBlockData();
             } else {
-                seedBlockData = await loadDmtMintBlockData(injectedMintInscriptionId);
+                seedBlockData = await loadBlockData(blockNumber);
             }
         } catch (e) {
             onFailedToReachRecursiveEndpoint();
