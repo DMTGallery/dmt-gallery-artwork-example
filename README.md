@@ -49,7 +49,7 @@ When users mint your project, the art they'll get is this script, but with all `
 
 > [!TIP]  
 > For the curious ones, all mints have a dmt-mint json embedded into their content.
-> That's where this block number will come from, to later be injected into your artwork script.
+> That's where this block number will come from, before landing into your artwork script.
 > The dmt-mint json acts as an "on-chain certificate", which secures the fact, that a Bitcoin block
 > with the right element has been used to mint your artwork.
 > 
